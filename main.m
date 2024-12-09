@@ -8,6 +8,14 @@
 % --> Lo clonas/descargas desde el GitHub de neurocics/LAN_current
 % --> Luego en MATLAB, en HOME - Set Path, tienes que agregar el directorio
 % --> donde lo bajaste con todos sus subfolders para que MATLAB lo pueda usar.
+% Otro paso para comenzar en otro PC es añadir a Add-on el modulo:
+% --> Statistics and Machine Learning Toolbox
+% --> DSP System Toolbox
+% --> Signal Processing Toolbox
+
+% PENDIENTES - DESAFIOS
+% --> (a) poder manipular los Labels
+% --> (b) poder sincronizar (evaluar sincronia) con TIMESTAMPs en LSL_LAB
 
 clc
 tic % Esto comienza el reloj de conteo del tiempo transcurrido, finaliza con toc (tic-toc)
@@ -16,28 +24,49 @@ clear
 disp(['Iniciando Script main.m by Hayo'])
 disp(['-------------------------------'])
 
-% Vamos a probar con P04 como Test Subject
-
-mi_path = '002-LUCIEN/SUJETOS/P04/EEG/'
+% ----------------------------------------------------------------------
+% Vamos a probar con P33 como Test Subject
+% -----------------------------------------------
+mi_path = '002-LUCIEN/SUJETOS/P33/EEG/'
 % la Funcion Nombrar_HomePath es mia para encontrar mi directorio
 % sincronizado independiente del computador en el que esté trabajando.
 
 Ruta = Nombrar_HomePath(mi_path)
-file = [Ruta, 'P04_NAVI'];
+file = [Ruta, 'P33_NAVI'];
 
+% ----------------------------------------------------------------------
 % Cargamos el Archivo escogido usando LAN Toolbox como una estructura tipo
 % LAN
+% ----------------------------------------------------------------------
+
 LAN =lan_read_file(file,'BA')
 
+% ---------------------------------------------------------------------
+% Codigo copiado de Billeke para hacer HIGH PASS FILTER
+% ----------------------------------------------------------------------
+% hight past filter in the continuos data 
+   if 1
+	    d1 = designfilt('highpassiir','FilterOrder',4, ...
+	        'HalfPowerFrequency',0.75,'DesignMethod','butter', 'SampleRate',LAN.srate); % 0.25
+	    for t=1:LAN.trials    
+	    LAN.data{t} = single(filtfilt(d1,double(LAN.data{t}')))';
+        end
+        disp(['Filtrado Pasa Alto (by Billeke) REALIZADO CON EXITO ....'])
+   end
+
+% ---------------------------------------------------------------------
+% Algunas funciones para evaluar LAN
+% -----------------------------------------------------------
+% LAN % muestra la estructura del struct LAN
+% LAN.RT % muestra los eventos
+% LAN.RT.label % muestra los labels de cada evento (desordenado si no se ha ordenado)
+% prepro_plot(LAN) % con esta función podemos explorar El EEG. 
+
+% CIERRE del Script -----------------------------------------------------
 % Una estupidez de codigo de cierre que mide el tiempo que tardamos en
 % correr todo el codigo, pero que además nos muestra que logramos completar
 % el codigo completo, con la tranquilidad de un cierre del proceso...
 % Espero
-
-LAN % muestra la estructura del struct LAN
-LAN.RT % muestra los eventos
-LAN.RT.label % muestra los labels de cada evento (desordenado si no se ha ordenado)
-preplo_plot(LAN)
 
 elapsedTime = toc;  % Mide el tiempo transcurrido
 disp(['Se fini... --> Tiempo transcurrido: ', num2str(elapsedTime), ' segundos']);
