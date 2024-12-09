@@ -16,7 +16,7 @@ disp(['-------------------------------'])
 mi_path = '002-LUCIEN/SUJETOS/P04/EEG'
 Ruta = Nombrar_HomePath(mi_path)
 
-d
+disp(Ruta)
 
 elapsedTime = toc;  % Mide el tiempo transcurrido
 disp(['Tiempo transcurrido: ', num2str(elapsedTime), ' segundos']);
