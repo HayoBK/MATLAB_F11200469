@@ -61,7 +61,9 @@ LAN =lan_read_file(file,'BA')
 % ---------------------------------------------------------------------
 
 listarEventosUnicos(LAN);  %funcion en H_funciones para emitir un listado de los Eventos
-exportarEventosCSV(LAN, 'P33_eventos_exportados_desdeMATLAB.csv');
+eventos_seleccionados = {'S101', 'S110', 'S120','S130'};
+LAN_filtered = generarLANConEventosSeleccionados(LAN, eventos_seleccionados);
+exportarEventosCSV(LAN_filtered, 'P33_eventos_exportados_desdeMATLAB.csv');
 
 %# Lexico para el Flujo de Datos a MATLAB:
 %# P_LEFT = 4
