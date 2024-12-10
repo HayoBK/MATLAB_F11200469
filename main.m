@@ -43,6 +43,9 @@ LAN =lan_read_file(file,'BA')
 
 % ---------------------------------------------------------------------
 % Codigo copiado de Billeke para hacer HIGH PASS FILTER
+% uno puede invocar a designfilt en el command window
+% para generar filtro a la pinta de uno y reemplazar la linea con los
+% parametros de designfilt más abajo.
 % ----------------------------------------------------------------------
 % hight past filter in the continuos data 
    if 1
@@ -53,6 +56,26 @@ LAN =lan_read_file(file,'BA')
         end
         disp(['Filtrado Pasa Alto (by Billeke) REALIZADO CON EXITO ....'])
    end
+
+% Empecemos a analizar los EVENTOS...
+% ---------------------------------------------------------------------
+
+listarEventosUnicos(LAN);  %funcion en H_funciones para emitir un listado de los Eventos
+exportarEventosCSV(LAN, 'P33_eventos_exportados_desdeMATLAB.csv');
+
+%# Lexico para el Flujo de Datos a MATLAB:
+%# P_LEFT = 4
+%# P_RIGHT = 6
+%# P_FORWARD = 8
+%# P_BACK = 2
+%# P_STILL = 5
+%# P_TRial es igual a 100 + Numero de Trial
+%# P_FULLSTOP = 202
+%# P_POSSIBLE_STOP = 201
+%# P_FALSE_STOP = 203
+%# P_GO_ON = 200
+%# P_FORCE_START = 205
+
 
 % ---------------------------------------------------------------------
 % Algunas funciones para evaluar LAN
