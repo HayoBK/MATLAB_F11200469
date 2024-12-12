@@ -40,7 +40,7 @@ file = [Ruta, 'P33_NAVI'];
 % ----------------------------------------------------------------------
 
 LAN =lan_read_file(file,'BA')
-
+oriLAN = LAN
 % ---------------------------------------------------------------------
 % Codigo copiado de Billeke para hacer HIGH PASS FILTER
 % uno puede invocar a designfilt en el command window
@@ -60,10 +60,45 @@ LAN =lan_read_file(file,'BA')
 % Empecemos a analizar los EVENTOS...
 % ---------------------------------------------------------------------
 
-listarEventosUnicos(LAN);  %funcion en H_funciones para emitir un listado de los Eventos
-eventos_seleccionados = {'S101', 'S110', 'S120','S130'};
-LAN_filtered = generarLANConEventosSeleccionados(LAN, eventos_seleccionados);
-exportarEventosCSV(LAN_filtered, 'P33_eventos_exportados_desdeMATLAB.csv');
+% listarEventosUnicos(LAN);  %funcion en H_funciones para emitir un listado de los Eventos
+
+
+
+%% -------------- SINCRONIZACION ------------------------
+% Ahora vamos a determinar el delta de tiempo de sincronización entre LSL y
+% EEG en base a comparar los Trials registrados en LSL-LabRecorder
+% preprocesdos con la brujeria a prueba de errores version nuevemil en
+% Python, y contrastarlos con los registros del EEG. 
+
+% Importar los time_stamps de los mismos eventos desde LabRecorder_LSL
+% precprocesados en Python
+archivo_sync = 'export_for_MATLAB_Sync.csv';
+
+% Llamar a la función para contexto NI (puede ser RV, recuerda que algunos
+% EEG estan mezclados como un continuo ambos experimentos)
+[delta_promedio, delta_std, delta_max] = h_calcularDeltaSyncContexto(Ruta, archivo_sync, LAN, 'NI');
+archivo_delta = fullfile(Ruta, 'Delta_Sync_LSL_a_EEG.mat');
+save(archivo_delta, 'delta_promedio');
+% Habrá un reporte de la diferencias entre deltas de relojes, que sería el
+% marcador de desincronización, que cuando lo probe, era de 9  milisegundos
+% máximo (promedio 6 ms) en 19 minutos de experimento. Despreciable como
+% error creo yo.  (un error de 0,00078%)
+
+% Ahora ocuparmeos delta_promedio para traer los datos de Trials reales
+% preprocesados en Python desde LSL, asi como fijaciones y blinks desde
+% Pupil_Labs
+%LAN.RT = struct('label', {{}}, 'latency', [], 'dur', []);
+[LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, 'trials_forMATLAB_NI.csv', 'fixation_forMATLAB.csv', 'blinks_forMATLAB.csv', LAN, delta_promedio);
+% Mostrar los trials únicos encontrados
+fprintf('Trials únicos identificados: %s\n', mat2str(unique_trials));
+
+
+%% -----------------------------------------------------------------------
+
+% Esta proxima función es por si queremos exportar los eventos desde EEG
+% para afuera en CSV --> Por si queremos analizar en Python cosas que
+% hayamos guardado en eventos en EEG (no creo).
+% exportarEventosCSV(LAN_filtered, 'P33_eventos_exportados_desdeMATLAB.csv');
 
 %# Lexico para el Flujo de Datos a MATLAB:
 %# P_LEFT = 4
@@ -85,6 +120,7 @@ exportarEventosCSV(LAN_filtered, 'P33_eventos_exportados_desdeMATLAB.csv');
 % LAN % muestra la estructura del struct LAN
 % LAN.RT % muestra los eventos
 % LAN.RT.label % muestra los labels de cada evento (desordenado si no se ha ordenado)
+%% ------------------------- VEAMOS EL PLOT! ---------------------------
 % prepro_plot(LAN) % con esta función podemos explorar El EEG. 
 
 % CIERRE del Script -----------------------------------------------------
