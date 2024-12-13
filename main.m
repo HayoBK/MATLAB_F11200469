@@ -40,7 +40,7 @@ file = [Ruta, 'P33_NAVI'];
 % ----------------------------------------------------------------------
 
 LAN =lan_read_file(file,'BA')
-oriLAN = LAN
+
 % ---------------------------------------------------------------------
 % Codigo copiado de Billeke para hacer HIGH PASS FILTER
 % uno puede invocar a designfilt en el command window
@@ -79,6 +79,7 @@ archivo_sync = 'export_for_MATLAB_Sync.csv';
 [delta_promedio, delta_std, delta_max] = h_calcularDeltaSyncContexto(Ruta, archivo_sync, LAN, 'NI');
 archivo_delta = fullfile(Ruta, 'Delta_Sync_LSL_a_EEG.mat');
 save(archivo_delta, 'delta_promedio');
+
 % Habrá un reporte de la diferencias entre deltas de relojes, que sería el
 % marcador de desincronización, que cuando lo probe, era de 9  milisegundos
 % máximo (promedio 6 ms) en 19 minutos de experimento. Despreciable como

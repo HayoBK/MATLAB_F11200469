@@ -25,17 +25,18 @@ function [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, archivo_trials,
 
     %% Ajustar las latencias con delta_promedio
     % Para trials (con inicio y fin)
-    trials.start_corrected = trials.start_time + delta_promedio;  % Inicio corregido
-    trials.end_corrected = trials.end_time + delta_promedio;      % Fin corregido
-    trials.duration = trials.end_corrected - trials.start_corrected;  % Duración
+    % Para trials (con inicio y fin)
+    trials.start_corrected = round((trials.start_time + delta_promedio) * 1000);  % Inicio corregido en ms
+    trials.end_corrected = round((trials.end_time + delta_promedio) * 1000);      % Fin corregido en ms
+    trials.duration = trials.end_corrected - trials.start_corrected;              % Duración en ms
 
     % Para fijaciones (con inicio y duración)
-    fijaciones.start_corrected = fijaciones.start_time + delta_promedio;  % Inicio corregido
-    fijaciones.end_corrected = fijaciones.start_corrected + fijaciones.duration;  % Fin calculado
+    fijaciones.start_corrected = round((fijaciones.start_time + delta_promedio) * 1000);  % Inicio corregido en ms
+    fijaciones.end_corrected = fijaciones.start_corrected + round(fijaciones.duration * 1000);  % Fin calculado en ms
 
     % Para blinks (con inicio y duración)
-    blinks.start_corrected = blinks.start_time + delta_promedio;  % Inicio corregido
-    blinks.end_corrected = blinks.start_corrected + blinks.duration;  % Fin calculado
+    blinks.start_corrected = round((blinks.start_time + delta_promedio) * 1000);  % Inicio corregido en ms
+    blinks.end_corrected = blinks.start_corrected + round(blinks.duration * 1000);  % Fin calculado en ms
 
     %% Filtrar eventos fuera del rango de los trials
     % Obtener el tiempo de inicio del primer trial y el tiempo de fin del último trial
@@ -58,14 +59,6 @@ function [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, archivo_trials,
     % Definir la tasa de muestreo deseada (por ejemplo, 1000 Hz)
     srate_deseada = 1000;  % Ajusta este valor según tus necesidades
 
-    if LAN.srate ~= srate_deseada
-        % Calcular los factores de remuestreo
-        [p, q] = rat(srate_deseada / LAN.srate);
-        % Remuestrear los datos de LAN
-        LAN.data = resample(LAN.data', p, q)';
-        % Actualizar la tasa de muestreo en LAN
-        LAN.srate = srate_deseada;
-    end
 
     %% Incorporar los datos corregidos a LAN
     % Inicializar o limpiar la estructura LAN.RT
@@ -75,8 +68,8 @@ function [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, archivo_trials,
     function agregar_eventos(eventos, etiqueta)
         for i = 1:height(eventos)
             RT.label{end+1} = etiqueta;
-            RT.latency(end+1) = eventos.start_corrected(i) * LAN.srate;  % Convertir a muestras
-            RT.dur(end+1) = (eventos.end_corrected(i) - eventos.start_corrected(i)) * LAN.srate;  % Duración en muestras
+            RT.latency(end+1) = eventos.start_corrected(i) %* LAN.srate;  % Convertir a muestras
+            RT.dur(end+1) = (eventos.end_corrected(i) - eventos.start_corrected(i)) %* LAN.srate;  % Duración en muestras
         end
     end
 
@@ -91,25 +84,37 @@ function [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, archivo_trials,
     % Agregar blinks
     agregar_eventos(blinks, 'BLINK');
     
-    % Paso 1: Convertir la estructura RT en una tabla
-    RT_table = struct2table(RT);
+    % Obtener los índices que ordenarían el campo 'latency' de forma ascendente
+    [~, indices] = sort([RT.latency]);
 
-    % Paso 2: Ordenar la tabla por la columna 'latency'
-    RT_table = sortrows(RT_table, 'latency');
+    % Aplicar el ordenamiento a cada campo de la estructura
+    RT.label = RT.label(indices);
+    RT.latency = RT.latency(indices);
+    RT.dur = RT.dur(indices);
 
-    % Paso 3: Convertir la tabla ordenada de nuevo en una estructura
-    RT = table2struct(RT_table);
 
-    %Ahora modificamos LAN original
-    cfg             = [];
-    cfg.type        = 'RT';
-    cfg.RT          = LAN.RT;
-    cfg.est         = [RT.label];
-    cfg.laten       = [RT.latency];
-    cfg.resp        = [RT.dur];
-    cfg.rw          = [1] ;      %   (ms)
-    RT_new = rt_read(cfg);
-    LAN.RT = RT.new
+    %% Vamos a construir paso a paso una estructura RT
+    RT_new = struct('label', {RT.label});
+    
+    % Suponiendo que RT.label es un arreglo de celdas de cadenas de texto
+    [etiquetas_unicas, ~, indices] = unique(RT.label);
+    
+    % Crear un mapa de etiquetas a identificadores numéricos
+    mapa_etiquetas = containers.Map(etiquetas_unicas, 1:length(etiquetas_unicas)); 
+    RT_new.est = indices;
+    RT_new.est = RT_new.est.';
+    RT_new.laten = RT.latency;
+    RT_new.OTHER = struct('names',  {RT.label});
+    RT_new.rt = RT.dur;
+    RT_new.resp = RT.dur;
+    RT_new.latency = RT.latency;
+    RT_new.misslaten = [];
+    RT_new.missest = [];
+    RT_new.nblock = 1;
+    n = length(RT_new.laten);
+    RT_new.good = true(1, n);
+    
+    LAN.RT = RT_new
     
     %% Generar un reporte de trials únicos encontrados
     unique_trials = unique(trials.trial_id);
