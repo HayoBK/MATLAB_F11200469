@@ -68,8 +68,8 @@ function [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, archivo_trials,
     function agregar_eventos(eventos, etiqueta)
         for i = 1:height(eventos)
             RT.label{end+1} = etiqueta;
-            RT.latency(end+1) = eventos.start_corrected(i) %* LAN.srate;  % Convertir a muestras
-            RT.dur(end+1) = (eventos.end_corrected(i) - eventos.start_corrected(i)) %* LAN.srate;  % Duración en muestras
+            RT.latency(end+1) = eventos.start_corrected(i); %* LAN.srate;  % Convertir a muestras
+            RT.dur(end+1) = (eventos.end_corrected(i) - eventos.start_corrected(i)); %* LAN.srate;  % Duración en muestras
         end
     end
 
@@ -114,7 +114,7 @@ function [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, archivo_trials,
     n = length(RT_new.laten);
     RT_new.good = true(1, n);
     
-    LAN.RT = RT_new
+    LAN.RT = RT_new;
     
     %% Generar un reporte de trials únicos encontrados
     unique_trials = unique(trials.trial_id);

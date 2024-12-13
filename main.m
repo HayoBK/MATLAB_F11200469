@@ -21,17 +21,17 @@ clc
 tic % Esto comienza el reloj de conteo del tiempo transcurrido, finaliza con toc (tic-toc)
 clear
 
-disp(['Iniciando Script main.m by Hayo'])
-disp(['-------------------------------'])
+disp(['Iniciando Script main.m by Hayo']);
+disp(['-------------------------------']);
 
 % ----------------------------------------------------------------------
 % Vamos a probar con P33 como Test Subject
 % -----------------------------------------------
-mi_path = '002-LUCIEN/SUJETOS/P33/EEG/'
+mi_path = '002-LUCIEN/SUJETOS/P33/EEG/';
 % la Funcion Nombrar_HomePath es mia para encontrar mi directorio
 % sincronizado independiente del computador en el que esté trabajando.
 
-Ruta = Nombrar_HomePath(mi_path)
+Ruta = Nombrar_HomePath(mi_path);
 file = [Ruta, 'P33_NAVI'];
 
 % ----------------------------------------------------------------------
@@ -39,7 +39,7 @@ file = [Ruta, 'P33_NAVI'];
 % LAN
 % ----------------------------------------------------------------------
 
-LAN =lan_read_file(file,'BA')
+LAN =lan_read_file(file,'BA');
 
 % ---------------------------------------------------------------------
 % Codigo copiado de Billeke para hacer HIGH PASS FILTER
@@ -61,8 +61,7 @@ LAN =lan_read_file(file,'BA')
 % ---------------------------------------------------------------------
 
 % listarEventosUnicos(LAN);  %funcion en H_funciones para emitir un listado de los Eventos
-
-
+% Ya no es necesario luego de todo el resto de los hueveos que hice...
 
 %% -------------- SINCRONIZACION ------------------------
 % Ahora vamos a determinar el delta de tiempo de sincronización entre LSL y
@@ -71,11 +70,12 @@ LAN =lan_read_file(file,'BA')
 % Python, y contrastarlos con los registros del EEG. 
 
 % Importar los time_stamps de los mismos eventos desde LabRecorder_LSL
-% precprocesados en Python
+% precprocesados en Python en HF_FixationPupilExtraction.py
 archivo_sync = 'export_for_MATLAB_Sync.csv';
 
 % Llamar a la función para contexto NI (puede ser RV, recuerda que algunos
-% EEG estan mezclados como un continuo ambos experimentos)
+% EEG estan mezclados como un continuo ambos experimentos) La diferencia
+% elegirá entre el primer set de labels o el segundo
 [delta_promedio, delta_std, delta_max] = h_calcularDeltaSyncContexto(Ruta, archivo_sync, LAN, 'NI');
 archivo_delta = fullfile(Ruta, 'Delta_Sync_LSL_a_EEG.mat');
 save(archivo_delta, 'delta_promedio');
@@ -88,9 +88,18 @@ save(archivo_delta, 'delta_promedio');
 % Ahora ocuparmeos delta_promedio para traer los datos de Trials reales
 % preprocesados en Python desde LSL, asi como fijaciones y blinks desde
 % Pupil_Labs
-%LAN.RT = struct('label', {{}}, 'latency', [], 'dur', []);
-[LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, 'trials_forMATLAB_NI.csv', 'fixation_forMATLAB.csv', 'blinks_forMATLAB.csv', LAN, delta_promedio);
+
+% Esta función por la cresta que me costó armarla, pero funcióno:
+
+[LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta,  ...
+    'trials_forMATLAB_NI.csv', ...
+    'fixation_forMATLAB.csv', ...
+    'blinks_forMATLAB.csv', ...
+    LAN, delta_promedio);
+
 % Mostrar los trials únicos encontrados
+disp(['-----------------------------------------------------------------------'])
+disp(['-----LOGRAMOS GENERAR el ARCHIVO LAN SINCRONIZADO... YEAH--------------'])
 fprintf('Trials únicos identificados: %s\n', mat2str(unique_trials));
 
 
@@ -101,7 +110,7 @@ fprintf('Trials únicos identificados: %s\n', mat2str(unique_trials));
 % hayamos guardado en eventos en EEG (no creo).
 % exportarEventosCSV(LAN_filtered, 'P33_eventos_exportados_desdeMATLAB.csv');
 
-%# Lexico para el Flujo de Datos a MATLAB:
+%# Lexico para el Flujo de Datos a MATLAB en los Labels originales de EEG
 %# P_LEFT = 4
 %# P_RIGHT = 6
 %# P_FORWARD = 8
@@ -124,12 +133,13 @@ fprintf('Trials únicos identificados: %s\n', mat2str(unique_trials));
 %% ------------------------- VEAMOS EL PLOT! ---------------------------
 % prepro_plot(LAN) % con esta función podemos explorar El EEG. 
 
-% CIERRE del Script -----------------------------------------------------
+%% CIERRE del Script -----------------------------------------------------
 % Una estupidez de codigo de cierre que mide el tiempo que tardamos en
 % correr todo el codigo, pero que además nos muestra que logramos completar
 % el codigo completo, con la tranquilidad de un cierre del proceso...
 % Espero
 
 elapsedTime = toc;  % Mide el tiempo transcurrido
+disp(['-----------------------------------------------------------------------']);
 disp(['Se fini... --> Tiempo transcurrido: ', num2str(elapsedTime), ' segundos']);
-disp(['Escrito por Hayo'])
+disp(['Escrito por Hayo Breibauer - www.labonce.cl']);
