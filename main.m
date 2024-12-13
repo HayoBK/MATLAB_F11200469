@@ -14,8 +14,13 @@
 % --> Signal Processing Toolbox
 
 % PENDIENTES - DESAFIOS
-% --> (a) poder manipular los Labels
+% --> (a) poder manipular los Labels  --> CHECK
 % --> (b) poder sincronizar (evaluar sincronia) con TIMESTAMPs en LSL_LAB
+%           --> CHECK
+% --> (c) preprocesar para filtrar, hacer ICA y toda esa brujeria EEG que
+%           quiero comprender mejor lo que estoy haciendo
+% --> (d) Incluir MULTIPLES PACIENTES para los análisis (hasta ahora solo
+%           estoy con P33 de prueba
 
 clc
 tic % Esto comienza el reloj de conteo del tiempo transcurrido, finaliza con toc (tic-toc)
@@ -89,7 +94,7 @@ save(archivo_delta, 'delta_promedio');
 % preprocesados en Python desde LSL, asi como fijaciones y blinks desde
 % Pupil_Labs
 
-% Esta función por la cresta que me costó armarla, pero funcióno:
+% Esta función por la cresta que me costó armarla, pero funcionó:
 
 [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta,  ...
     'trials_forMATLAB_NI.csv', ...
@@ -97,13 +102,11 @@ save(archivo_delta, 'delta_promedio');
     'blinks_forMATLAB.csv', ...
     LAN, delta_promedio);
 
-% Mostrar los trials únicos encontrados
 disp(['-----------------------------------------------------------------------'])
 disp(['-----LOGRAMOS GENERAR el ARCHIVO LAN SINCRONIZADO... YEAH--------------'])
-fprintf('Trials únicos identificados: %s\n', mat2str(unique_trials));
 
 
-%% -----------------------------------------------------------------------
+%% -----------------------LEGACY del proceso de aprender----------------------
 
 % Esta proxima función es por si queremos exportar los eventos desde EEG
 % para afuera en CSV --> Por si queremos analizar en Python cosas que
@@ -124,14 +127,11 @@ fprintf('Trials únicos identificados: %s\n', mat2str(unique_trials));
 %# P_FORCE_START = 205
 
 
-% ---------------------------------------------------------------------
-% Algunas funciones para evaluar LAN
-% -----------------------------------------------------------
-% LAN % muestra la estructura del struct LAN
-% LAN.RT % muestra los eventos
-% LAN.RT.label % muestra los labels de cada evento (desordenado si no se ha ordenado)
 %% ------------------------- VEAMOS EL PLOT! ---------------------------
+
 % prepro_plot(LAN) % con esta función podemos explorar El EEG. 
+% listarEventosUnicos(LAN);  %funcion en H_funciones para emitir un listado de los Eventos
+
 
 %% CIERRE del Script -----------------------------------------------------
 % Una estupidez de codigo de cierre que mide el tiempo que tardamos en

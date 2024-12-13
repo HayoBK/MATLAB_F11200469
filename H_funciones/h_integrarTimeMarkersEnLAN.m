@@ -77,7 +77,44 @@ function [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, archivo_trials,
     for i = 1:height(trials)
         agregar_eventos(trials(i, :), sprintf('TRIAL_%d', trials.trial_id(i)));
     end
+    
+    %% Aqui trataremos de reemplazar los codigos TRIAL_XX por los codigos enriquecidos de MWM
+     % Definir el número total de etiquetas
+    num_trials = 33;
 
+    % Crear una celda de texto con las etiquetas TRIAL_1, TRIAL_2, ..., TRIAL_33
+    Ori_labels = arrayfun(@(x) sprintf('TRIAL_%d', x), 1:num_trials, 'UniformOutput', false);
+
+    MWM_labels = {'T01_FreeNav', 'T02_Training', ...
+    'T03_NaviVT1_i1', 'T04_NaviVT1_i2', 'T05_NaviVT1_i3', 'T06_NaviVT1_i4', ...
+    'T07_NaviHT1_i1', 'T08_NaviHT1_i2', 'T09_NaviHT1_i3', 'T10_NaviHT1_i4', ...
+    'T11_NaviHT1_i5', 'T12_NaviHT1_i6', 'T13_NaviHT1_i7', 'T14_Rest1', ...
+    'T15_NaviHT2_i1', 'T16_NaviHT2_i2', 'T17_NaviHT2_i3', 'T18_NaviHT2_i4', ...
+    'T19_NaviHT2_i5', 'T20_NaviHT2_i6', 'T21_NaviHT2_i7', 'T22_Rest2', ...
+    'T23_NaviHT3_i1', 'T24_NaviHT3_i2', 'T25_NaviHT3_i3', 'T26_NaviHT3_i4', ...
+    'T27_NaviHT3_i5', 'T28_NaviHT3_i6', 'T29_NaviHT3_i7', 'T30_Rest3', ...
+    'T31_NaviVT2_i1', 'T32_NaviVT2_i2', 'T33_NaviVT2_i3'};
+    
+    label_map = containers.Map(Ori_labels, MWM_labels);
+
+    % Inicializar una nueva celda para las etiquetas actualizadas
+    updated_labels = cell(size(RT.label));
+    
+    % Recorrer cada etiqueta en RT.label y reemplazarla según el mapa
+    for i = 1:length(RT.label)
+        current_label = RT.label{i};
+        if isKey(label_map, current_label)
+            updated_labels{i} = label_map(current_label);
+        else
+            % Mantener la etiqueta original si no hay correspondencia en el mapa
+            updated_labels{i} = current_label;
+        end
+    end
+    
+    % Actualizar RT.label con las etiquetas modificadas
+    RT.label = updated_labels;
+    
+    %% Ahora añadamos las Fijaciones y Parpadeos
     % Agregar fijaciones
     agregar_eventos(fijaciones, 'FIXATION');
 
@@ -91,6 +128,8 @@ function [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, archivo_trials,
     RT.label = RT.label(indices);
     RT.latency = RT.latency(indices);
     RT.dur = RT.dur(indices);
+    
+   
 
 
     %% Vamos a construir paso a paso una estructura RT
