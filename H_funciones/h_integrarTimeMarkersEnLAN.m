@@ -1,4 +1,4 @@
-function [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, archivo_trials, archivo_fijaciones, archivo_blink, LAN, delta_promedio)
+function [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, archivo_trials, archivo_fijaciones, archivo_blink, LAN, delta_promedio, modalidad, modo_operacion)
     % h_integrarTimeMarkersEnLAN: Incorpora datos de trials, fijaciones y blinks
     % a un archivo LAN, ajustando las latencias con delta_promedio y asegurando
     % la coherencia temporal mediante remuestreo si es necesario.
@@ -32,11 +32,11 @@ function [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, archivo_trials,
 
     % Para fijaciones (con inicio y duración)
     fijaciones.start_corrected = round((fijaciones.start_time + delta_promedio) * 1000);  % Inicio corregido en ms
-    fijaciones.end_corrected = fijaciones.start_corrected + round(fijaciones.duration * 1000);  % Fin calculado en ms
+    fijaciones.end_corrected = fijaciones.start_corrected + round(fijaciones.duration);  % Fin calculado en ms --> Pupil-labs pone inicio en segundos y duración en ms
 
     % Para blinks (con inicio y duración)
     blinks.start_corrected = round((blinks.start_time + delta_promedio) * 1000);  % Inicio corregido en ms
-    blinks.end_corrected = blinks.start_corrected + round(blinks.duration * 1000);  % Fin calculado en ms
+    blinks.end_corrected = blinks.start_corrected + round(blinks.duration * 1000);  % Fin calculado en ms (aqui si la duración de Blinks está en segundos)
 
     %% Filtrar eventos fuera del rango de los trials
     % Obtener el tiempo de inicio del primer trial y el tiempo de fin del último trial
@@ -85,15 +85,25 @@ function [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, archivo_trials,
     % Crear una celda de texto con las etiquetas TRIAL_1, TRIAL_2, ..., TRIAL_33
     Ori_labels = arrayfun(@(x) sprintf('TRIAL_%d', x), 1:num_trials, 'UniformOutput', false);
 
-    MWM_labels = {'T01_FreeNav', 'T02_Training', ...
-    'T03_NaviVT1_i1', 'T04_NaviVT1_i2', 'T05_NaviVT1_i3', 'T06_NaviVT1_i4', ...
-    'T07_NaviHT1_i1', 'T08_NaviHT1_i2', 'T09_NaviHT1_i3', 'T10_NaviHT1_i4', ...
-    'T11_NaviHT1_i5', 'T12_NaviHT1_i6', 'T13_NaviHT1_i7', 'T14_Rest1', ...
-    'T15_NaviHT2_i1', 'T16_NaviHT2_i2', 'T17_NaviHT2_i3', 'T18_NaviHT2_i4', ...
-    'T19_NaviHT2_i5', 'T20_NaviHT2_i6', 'T21_NaviHT2_i7', 'T22_Rest2', ...
-    'T23_NaviHT3_i1', 'T24_NaviHT3_i2', 'T25_NaviHT3_i3', 'T26_NaviHT3_i4', ...
-    'T27_NaviHT3_i5', 'T28_NaviHT3_i6', 'T29_NaviHT3_i7', 'T30_Rest3', ...
-    'T31_NaviVT2_i1', 'T32_NaviVT2_i2', 'T33_NaviVT2_i3'};
+    if strcmp(modalidad, 'NI')
+        prefijo = 'NI_';
+    elseif strcmp(modalidad, 'RV')
+        prefijo = 'RV_';
+    else
+        error('Modalidad no reconocida. Use "NI" o "RV".');
+    end
+
+    MWM_labels_base = {'T01_FreeNav', 'T02_Training', ...
+        'T03_NaviVT1_i1', 'T04_NaviVT1_i2', 'T05_NaviVT1_i3', 'T06_NaviVT1_i4', ...
+        'T07_NaviHT1_i1', 'T08_NaviHT1_i2', 'T09_NaviHT1_i3', 'T10_NaviHT1_i4', ...
+        'T11_NaviHT1_i5', 'T12_NaviHT1_i6', 'T13_NaviHT1_i7', 'T14_Rest1', ...
+        'T15_NaviHT2_i1', 'T16_NaviHT2_i2', 'T17_NaviHT2_i3', 'T18_NaviVT2_i4', ...
+        'T19_NaviHT2_i5', 'T20_NaviHT2_i6', 'T21_NaviHT2_i7', 'T22_Rest2', ...
+        'T23_NaviHT3_i1', 'T24_NaviHT3_i2', 'T25_NaviHT3_i3', 'T26_NaviHT3_i4', ...
+        'T27_NaviHT3_i5', 'T28_NaviHT3_i6', 'T29_NaviHT3_i7', 'T30_Rest3', ...
+        'T31_NaviVT2_i1', 'T32_NaviVT2_i2', 'T33_NaviVT2_i3'};
+    
+    MWM_labels = strcat(prefijo, MWM_labels_base);
     
     label_map = containers.Map(Ori_labels, MWM_labels);
 
@@ -153,15 +163,35 @@ function [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta, archivo_trials,
     n = length(RT_new.laten);
     RT_new.good = true(1, n);
     
-    LAN.RT = RT_new;
     
+
+    %% Brujeria para incorporar opción RV
+
+    
+    if strcmp(modo_operacion, 'add')
+        % Añadir los nuevos datos a los existentes
+        RT_add = struct;
+        RT_add.label = [LAN.RT.label,RT_new.label];
+        RT_add.est = [LAN.RT.est, RT_new.est];
+        RT_add.laten = [LAN.RT.laten, RT_new.laten];
+        RT_add.OTHER.names = [LAN.RT.OTHER.names, RT_new.OTHER.names];
+        RT_add.rt = [LAN.RT.rt, RT_new.rt];
+        RT_add.resp = [LAN.RT.resp, RT_new.resp];
+        RT_add.latency = [LAN.RT.latency, RT_new.latency];
+        RT_add.good = [LAN.RT.good, RT_new.good];
+        LAN.RT = RT_add;
+    else
+        LAN.RT = RT_new;
+    end
+
     %% Generar un reporte de trials únicos encontrados
     unique_trials = unique(trials.trial_id);
     expected_trials = 1:max(unique_trials);  % Lista de trials esperados
     missing_trials = setdiff(expected_trials, unique_trials);  % Trials faltantes
 
     % Guardar el reporte en un archivo .txt
-    reporte_trials = fullfile(Ruta, 'Reporte_Trials.txt');
+    name = ['Reporte_Trials_',modalidad,'.txt'];
+    reporte_trials = fullfile(Ruta, name);
     fid = fopen(reporte_trials, 'w');
     fprintf(fid, 'Trials encontrados: %s\n', mat2str(unique_trials'));
     if ~isempty(missing_trials)

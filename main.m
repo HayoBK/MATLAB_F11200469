@@ -32,12 +32,13 @@ disp(['-------------------------------']);
 % ----------------------------------------------------------------------
 % Vamos a probar con P33 como Test Subject
 % -----------------------------------------------
-mi_path = '002-LUCIEN/SUJETOS/P33/EEG/';
+Sujeto = 'P33';
+
 % la Funcion Nombrar_HomePath es mia para encontrar mi directorio
 % sincronizado independiente del computador en el que esté trabajando.
-
+mi_path = ['002-LUCIEN/SUJETOS/',Sujeto,'/EEG/'];
 Ruta = Nombrar_HomePath(mi_path);
-file = [Ruta, 'P33_NAVI'];
+file = [Ruta, Sujeto,'_NAVI'];
 
 % ----------------------------------------------------------------------
 % Cargamos el Archivo escogido usando LAN Toolbox como una estructura tipo
@@ -76,14 +77,20 @@ LAN =lan_read_file(file,'BA');
 
 % Importar los time_stamps de los mismos eventos desde LabRecorder_LSL
 % precprocesados en Python en HF_FixationPupilExtraction.py
-archivo_sync = 'export_for_MATLAB_Sync.csv';
+archivo_sync = 'export_for_MATLAB_Sync_NI.csv';
 
 % Llamar a la función para contexto NI (puede ser RV, recuerda que algunos
 % EEG estan mezclados como un continuo ambos experimentos) La diferencia
 % elegirá entre el primer set de labels o el segundo
-[delta_promedio, delta_std, delta_max] = h_calcularDeltaSyncContexto(Ruta, archivo_sync, LAN, 'NI');
-archivo_delta = fullfile(Ruta, 'Delta_Sync_LSL_a_EEG.mat');
-save(archivo_delta, 'delta_promedio');
+[delta_promedio_NI, delta_std, delta_max] = h_calcularDeltaSyncContexto(Ruta, archivo_sync, LAN, 'NI');
+
+%Lo mismo para modalidad RV
+archivo_sync = 'export_for_MATLAB_Sync_RV.csv';
+[delta_promedio_RV, delta_std, delta_max] = h_calcularDeltaSyncContexto(Ruta, archivo_sync, LAN, 'RV');
+
+%Grabar el Delta no es realmente necesario
+%archivo_delta = fullfile(Ruta, 'Delta_Sync_LSL_a_EEG.mat');
+%save(archivo_delta, 'delta_promedio');
 
 % Habrá un reporte de la diferencias entre deltas de relojes, que sería el
 % marcador de desincronización, que cuando lo probe, era de 9  milisegundos
@@ -98,9 +105,18 @@ save(archivo_delta, 'delta_promedio');
 
 [LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta,  ...
     'trials_forMATLAB_NI.csv', ...
-    'fixation_forMATLAB.csv', ...
-    'blinks_forMATLAB.csv', ...
-    LAN, delta_promedio);
+    'fixation_forMATLAB_NI.csv', ...
+    'blinks_forMATLAB_NI.csv', ...
+    LAN, delta_promedio_NI, 'NI','solo');
+
+%y ahora AÑaDIMOS (con 'add' como parametro final) los labels y eventos para RV cuando están continuos en un
+% mismo EEG: 
+
+[LAN, unique_trials] = h_integrarTimeMarkersEnLAN(Ruta,  ...
+    'trials_forMATLAB_RV.csv', ...
+    'fixation_forMATLAB_RV.csv', ...
+    'blinks_forMATLAB_RV.csv', ...
+    LAN, delta_promedio_RV, 'RV','add');
 
 disp(['-----------------------------------------------------------------------'])
 disp(['-----LOGRAMOS GENERAR el ARCHIVO LAN SINCRONIZADO... YEAH--------------'])
@@ -114,6 +130,8 @@ disp(['-----LOGRAMOS GENERAR el ARCHIVO LAN SINCRONIZADO... YEAH--------------']
 % exportarEventosCSV(LAN_filtered, 'P33_eventos_exportados_desdeMATLAB.csv');
 
 %# Lexico para el Flujo de Datos a MATLAB en los Labels originales de EEG
+% Dado que tengo todo más procesado en Python, es poco probabble que tenga
+% que usarlos....
 %# P_LEFT = 4
 %# P_RIGHT = 6
 %# P_FORWARD = 8
@@ -131,7 +149,7 @@ disp(['-----LOGRAMOS GENERAR el ARCHIVO LAN SINCRONIZADO... YEAH--------------']
 
 % prepro_plot(LAN) % con esta función podemos explorar El EEG. 
 % listarEventosUnicos(LAN);  %funcion en H_funciones para emitir un listado de los Eventos
-
+% delete(gcf) --> BORRAR los GUI.... sobre todo cuando se quedan pegados. 
 
 %% CIERRE del Script -----------------------------------------------------
 % Una estupidez de codigo de cierre que mide el tiempo que tardamos en
@@ -139,7 +157,13 @@ disp(['-----LOGRAMOS GENERAR el ARCHIVO LAN SINCRONIZADO... YEAH--------------']
 % el codigo completo, con la tranquilidad de un cierre del proceso...
 % Espero
 
+% Guardemos lo que logramos con LAN
+name = ['hLAN_',Sujeto,'.mat'];
+file_name = fullfile(Ruta, name);
+save(file_name, 'LAN');
+
 elapsedTime = toc;  % Mide el tiempo transcurrido
 disp(['-----------------------------------------------------------------------']);
 disp(['Se fini... --> Tiempo transcurrido: ', num2str(elapsedTime), ' segundos']);
+disp(['Todo el Merito Mayor a Pablo Billeke en NeuroCICS']);
 disp(['Escrito por Hayo Breibauer - www.labonce.cl']);
