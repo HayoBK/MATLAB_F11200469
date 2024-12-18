@@ -56,7 +56,7 @@ LAN =lan_read_file(file,'BA');
 % hight past filter in the continuos data 
    if 1
 	    d1 = designfilt('highpassiir','FilterOrder',4, ...
-	        'HalfPowerFrequency',0.75,'DesignMethod','butter', 'SampleRate',LAN.srate); % 0.25
+	        'HalfPowerFrequency',0.25,'DesignMethod','butter', 'SampleRate',LAN.srate); % 0.25
 	    for t=1:LAN.trials    
 	    LAN.data{t} = single(filtfilt(d1,double(LAN.data{t}')))';
         end
